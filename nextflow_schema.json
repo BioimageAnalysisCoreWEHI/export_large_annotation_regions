@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/BioimageAnalysisCoreWEHI/export_large_annotation_regions/main/nextflow_schema.json",
+  "title": "export_large_annotation_regions pipeline parameters",
+  "description": "Headless QuPath export of large annotation regions from a QuPath project",
+  "type": "object",
+  "$defs": {
+    "input_output_options": {
+      "title": "Input/output options",
+      "type": "object",
+      "required": ["project", "qupath_bin", "outdir"],
+      "properties": {
+        "project": {
+          "type": "string",
+          "format": "file-path",
+          "exists": true,
+          "description": "Path to QuPath project .qpproj file"
+        },
+        "qupath_bin": {
+          "type": "string",
+          "format": "file-path",
+          "exists": true,
+          "description": "Path to QuPath executable, e.g. /vast/projects/project_name/QuPath/bin/QuPath"
+        },
+        "script": {
+          "type": "string",
+          "format": "file-path",
+          "exists": true,
+          "default": "bin/export_large_annotation_region.groovy",
+          "description": "Path to Groovy script run by QuPath in headless mode"
+        },
+        "target_annotation_names": {
+          "type": "string",
+          "default": "annotation_1",
+          "description": "Comma-separated annotation names to export (empty string exports all annotations)"
+        },
+        "downsample": {
+          "type": "number",
+          "minimum": 0.000001,
+          "default": 1.0,
+          "description": "Downsample factor for region export (1.0 = full resolution)"
+        },
+        "compression_type": {
+          "type": "string",
+          "default": "LZW",
+          "description": "OME-TIFF compression type passed to QuPath, for example LZW"
+        },
+        "output_subdir": {
+          "type": "string",
+          "default": "ExportedAnnotations",
+          "description": "Subdirectory created beside the QuPath project to store exported regions"
+        },
+        "tile_size": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1024,
+          "description": "Tile width/height in pixels used by OMEPyramidWriter"
+        },
+        "n_threads": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 64,
+          "description": "Number of threads used internally by QuPath export"
+        },
+        "big_tiff": {
+          "type": "boolean",
+          "default": true,
+          "description": "Write output as BigTIFF when files may exceed 4 GB"
+        },
+        "build_pyramid": {
+          "type": "boolean",
+          "default": true,
+          "description": "Write multiresolution pyramidal OME-TIFF output"
+        },
+        "outdir": {
+          "type": "string",
+          "format": "directory-path",
+          "description": "Output directory for exported annotation regions"
+        },
+        "publish_dir_mode": {
+          "type": "string",
+          "default": "copy",
+          "description": "Method used by Nextflow publishDir",
+          "enum": ["symlink", "rellink", "link", "copy", "copyNoFollow", "move"]
+        }
+      }
+    },
+    "generic_options": {
+      "title": "Generic options",
+      "type": "object",
+      "properties": {
+        "validate_params": {
+          "type": "boolean",
+          "default": true,
+          "hidden": true,
+          "description": "Validate parameters against schema"
+        }
+      }
+    }
+  },
+  "allOf": [
+    { "$ref": "#/$defs/input_output_options" },
+    { "$ref": "#/$defs/generic_options" }
+  ]
+}
