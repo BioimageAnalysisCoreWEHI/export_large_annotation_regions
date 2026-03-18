@@ -55,8 +55,16 @@ boolean buildPyramid = parseBoolean('BUILD_PYRAMID', true)
 // SETUP
 // ============================================================
 
-def server        = getCurrentServer()
-def baseImageName = getProjectEntry().getImageName()
+def imageName = getProjectEntry()?.getImageName() ?: '(unknown image)'
+def server
+try {
+    server = getCurrentServer()
+} catch (Exception e) {
+    print "[WARN] Skipping ${imageName}: unable to open image server (${e.getMessage()})"
+    return
+}
+
+def baseImageName = imageName
     .replaceAll(/(?i)\.(svs|tif|tiff|ndpi|scn|vsi|qptiff|btf|czi|lif)$/, '')
 
 def outputPath = buildFilePath(PROJECT_BASE_DIR, outputSubDir)
