@@ -60,6 +60,31 @@ try {
 // ============================================================
 
 def imageName = getProjectEntry()?.getImageName() ?: '(unknown image)'
+
+// ============================================================
+// COLLECT & FILTER ANNOTATIONS (BEFORE OPENING SERVER)
+// ============================================================
+
+def allAnnotations = getAnnotationObjects()
+
+if (allAnnotations.isEmpty()) {
+    print "No annotations found. Exiting."
+    return
+}
+
+def annotationsToExport = (targetAnnotationNames && !targetAnnotationNames.isEmpty())
+    ? allAnnotations.findAll { a ->
+        def name = a.getName()
+        targetAnnotationNames.any { t -> name?.equalsIgnoreCase(t) }
+      }
+    : allAnnotations
+
+if (annotationsToExport.isEmpty()) {
+    print "No annotations matched: ${targetAnnotationNames}"
+    print "Available: ${allAnnotations.collect { it.getName() ?: '(unnamed)' }}"
+    return
+}
+
 def server
 try {
     server = getCurrentServer()
@@ -219,34 +244,10 @@ class RoiMaskedServer extends AbstractTileableImageServer {
 }
 
 // ============================================================
-// COLLECT & FILTER ANNOTATIONS
-// ============================================================
-
-def allAnnotations = getAnnotationObjects()
-
-if (allAnnotations.isEmpty()) {
-    print "No annotations found. Exiting."
-    return
-}
-
-def annotationsToExport = (targetAnnotationNames && !targetAnnotationNames.isEmpty())
-    ? allAnnotations.findAll { a ->
-        def name = a.getName()
-        targetAnnotationNames.any { t -> name?.equalsIgnoreCase(t) }
-      }
-    : allAnnotations
-
-if (annotationsToExport.isEmpty()) {
-    print "No annotations matched: ${targetAnnotationNames}"
-    print "Available: ${allAnnotations.collect { it.getName() ?: '(unnamed)' }}"
-    return
-}
-
-print "Exporting ${annotationsToExport.size()} annotation(s)...\n"
-
-// ============================================================
 // EXPORT LOOP
 // ============================================================
+
+print "Exporting ${annotationsToExport.size()} annotation(s)...\n"
 
 def nameCount = [:]
 
