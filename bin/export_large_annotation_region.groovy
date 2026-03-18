@@ -66,7 +66,9 @@ try {
     return
 }
 
-def outputPath = buildFilePath(PROJECT_BASE_DIR, outputSubDir)
+def outputPath = new File(outputSubDir).isAbsolute()
+    ? outputSubDir
+    : buildFilePath(PROJECT_BASE_DIR, outputSubDir)
 mkdirs(outputPath)
 
 print "Output directory: ${outputPath}"
@@ -92,11 +94,10 @@ class RoiMaskedServer extends AbstractTileableImageServer {
         this.roiShapeFullRes  = roi.getShape()
         this.baseDownsample   = downsample
 
-        def bounds  = roi.getBounds2D()
-        this.cropX  = (int) bounds.getX()
-        this.cropY  = (int) bounds.getY()
-        int cropW   = (int) Math.ceil(bounds.getWidth()  / downsample)
-        int cropH   = (int) Math.ceil(bounds.getHeight() / downsample)
+        this.cropX  = (int) roi.getBoundsX()
+        this.cropY  = (int) roi.getBoundsY()
+        int cropW   = (int) Math.ceil(roi.getBoundsWidth()  / downsample)
+        int cropH   = (int) Math.ceil(roi.getBoundsHeight() / downsample)
 
         this.metadata = new ImageServerMetadata.Builder(wrappedServer.getMetadata())
             .width(cropW)
