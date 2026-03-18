@@ -53,7 +53,7 @@
         "tile_size": {
           "type": "integer",
           "minimum": 1,
-          "default": 1024,
+          "default": 512,
           "description": "Tile width/height in pixels used by OMEPyramidWriter"
         },
         "n_threads": {

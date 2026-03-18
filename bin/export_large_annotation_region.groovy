@@ -40,7 +40,7 @@ def targetAnnotationNames = targetAnnotationNamesRaw?.trim()
 
 double downsample    = parseDouble('DOWNSAMPLE', 1.0)
 def outputSubDir     = env.getOrDefault('OUTPUT_SUBDIR', 'ExportedAnnotations')
-int  tileSize        = parseInt('TILE_SIZE', 1024)
+int  tileSize        = parseInt('TILE_SIZE', 512)
 int  nThreads        = parseInt('NTHREADS', 48)
 boolean bigTiff      = parseBoolean('BIG_TIFF', true)
 boolean buildPyramid = parseBoolean('BUILD_PYRAMID', true)
@@ -74,6 +74,7 @@ mkdirs(outputPath)
 print "Output directory: ${outputPath}"
 print "Annotation filter: ${targetAnnotationNames ? targetAnnotationNames : '[ALL]'}"
 print "Channels: ${server.nChannels()} | Bit depth: ${server.getPixelType()} | Downsample: ${downsample}"
+print "Tile size: ${tileSize} | Threads: ${nThreads} | Pyramid: ${buildPyramid}"
 
 // ============================================================
 // MASKED SERVER CLASS
@@ -146,6 +147,7 @@ class RoiMaskedServer extends AbstractTileableImageServer {
         def scaledShape = at.createTransformedShape(roiShapeFullRes)
 
         def tileBounds = new Rectangle(0, 0, w, h)
+        int[] zeroRow = new int[w]   // reused zero row to avoid large per-tile allocations
 
         // ── Fast path 1: entire tile is inside the ROI ──────────────────────
         // contains(Rectangle) checks all four corners + boundary — if the
@@ -159,11 +161,12 @@ class RoiMaskedServer extends AbstractTileableImageServer {
 
         // ── Fast path 2: entire tile is outside the ROI ─────────────────────
         // intersects() returns false when the shape and rectangle are fully
-        // disjoint. Zero every band in one setSamples call per band and return.
+        // disjoint. Zero row-by-row to avoid allocating huge w*h arrays per tile.
         if (!scaledShape.intersects(tileBounds)) {
-            int[] zeros = new int[w * h]
             for (int b = 0; b < nBands; b++) {
-                tileRaster.setSamples(0, 0, w, h, b, zeros)
+                for (int y = 0; y < h; y++) {
+                    tileRaster.setSamples(0, y, w, 1, b, zeroRow)
+                }
             }
             return tile
         }
@@ -182,7 +185,6 @@ class RoiMaskedServer extends AbstractTileableImageServer {
         // Row-wise run-length zeroing — batches contiguous outside-ROI runs
         // into a single setSamples() call per band, avoiding per-pixel overhead.
         int[] maskRow = new int[w]
-        int[] zeroRow = new int[w]   // always zero; reused across rows
 
         for (int y = 0; y < h; y++) {
             maskRaster.getSamples(0, y, w, 1, 0, maskRow)
