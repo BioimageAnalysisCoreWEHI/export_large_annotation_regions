@@ -75,7 +75,7 @@
         "outdir": {
           "type": "string",
           "format": "directory-path",
-          "description": "Output directory for exported annotation regions"
+          "description": "Output directory for exported annotation regions ie qupath project folder"
         },
         "publish_dir_mode": {
           "type": "string",
