@@ -47,7 +47,7 @@ try {
 
 def outputSubDir = env.getOrDefault('OUTPUT_SUBDIR', 'ExportedAnnotations')
 int tileSize = parseInt('TILE_SIZE', 1024)
-int nThreads = parseInt('NTHREADS', 64)
+int nThreads = parseInt('NTHREADS', 48)
 boolean bigTiff = parseBoolean('BIG_TIFF', true)
 boolean buildPyramid = parseBoolean('BUILD_PYRAMID', true)
 

@@ -59,7 +59,7 @@
         "n_threads": {
           "type": "integer",
           "minimum": 1,
-          "default": 64,
+          "default": 48,
           "description": "Number of threads used internally by QuPath export"
         },
         "big_tiff": {
