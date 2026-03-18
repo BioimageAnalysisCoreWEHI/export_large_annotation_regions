@@ -6,6 +6,7 @@ import qupath.lib.images.servers.TileRequest
 
 import java.awt.image.BufferedImage
 import java.awt.Color
+import java.awt.Rectangle
 import java.awt.RenderingHints
 import java.awt.geom.AffineTransform
 import java.awt.Shape
@@ -74,35 +75,33 @@ print "Channels: ${server.nChannels()} | Bit depth: ${server.getPixelType()} | D
 
 // ============================================================
 // MASKED SERVER CLASS
-// Wraps the original server; tiles outside the ROI shape are
-// zeroed out — all channels and bit depth are preserved.
 // ============================================================
 
 class RoiMaskedServer extends AbstractTileableImageServer {
 
     private final def wrappedServer
-    private final Shape roiShapeFullRes   // ROI shape in full-resolution coordinates
-    private final int   cropX, cropY      // top-left of the bounding box (full-res)
+    private final Shape roiShapeFullRes
+    private final int   cropX, cropY
+    private final double baseDownsample
     private final ImageServerMetadata metadata
 
     RoiMaskedServer(wrappedServer, roi, double downsample) {
         super()
 
-        this.wrappedServer  = wrappedServer
-        this.roiShapeFullRes = roi.getShape()
+        this.wrappedServer    = wrappedServer
+        this.roiShapeFullRes  = roi.getShape()
+        this.baseDownsample   = downsample
 
-        def bounds    = roi.getBounds2D()
-        this.cropX    = (int) bounds.getX()
-        this.cropY    = (int) bounds.getY()
-        int cropW     = (int) Math.ceil(bounds.getWidth()  / downsample)
-        int cropH     = (int) Math.ceil(bounds.getHeight() / downsample)
+        def bounds  = roi.getBounds2D()
+        this.cropX  = (int) bounds.getX()
+        this.cropY  = (int) bounds.getY()
+        int cropW   = (int) Math.ceil(bounds.getWidth()  / downsample)
+        int cropH   = (int) Math.ceil(bounds.getHeight() / downsample)
 
-        // Build metadata matching the cropped region exactly,
-        // keeping all channel names, pixel type, pixel size, etc.
         this.metadata = new ImageServerMetadata.Builder(wrappedServer.getMetadata())
             .width(cropW)
             .height(cropH)
-            .levelsFromDownsamples(1.0)   // pyramid levels added by the writer
+            .levelsFromDownsamples(1.0)
             .build()
     }
 
@@ -113,34 +112,63 @@ class RoiMaskedServer extends AbstractTileableImageServer {
     String getServerType() { return "ROI Masked Server" }
 
     @Override
+    qupath.lib.images.servers.ImageServerBuilder.ServerBuilder createServerBuilder() {
+        return null
+    }
+
+    @Override
     protected BufferedImage readTile(TileRequest tileRequest) throws IOException {
-        // Tile coordinates are in the *cropped* image space.
-        // Convert back to full-resolution coordinates of the original server.
-        double ds   = tileRequest.getDownsample()
-        int tileX   = (int) (tileRequest.getTileX() * ds) + cropX
-        int tileY   = (int) (tileRequest.getTileY() * ds) + cropY
-        int tileW   = (int) (tileRequest.getTileWidth()  * ds)
-        int tileH   = (int) (tileRequest.getTileHeight() * ds)
+
+        double levelDownsample  = tileRequest.getDownsample()
+        double sourceDownsample = this.baseDownsample * levelDownsample
+
+        int tileX = (int) Math.floor(cropX + tileRequest.getTileX() * sourceDownsample)
+        int tileY = (int) Math.floor(cropY + tileRequest.getTileY() * sourceDownsample)
+        int tileW = (int) Math.ceil(tileRequest.getTileWidth()  * sourceDownsample)
+        int tileH = (int) Math.ceil(tileRequest.getTileHeight() * sourceDownsample)
 
         def request = RegionRequest.createInstance(
-            wrappedServer.getPath(), ds,
-            tileX, tileY, tileW, tileH
+            wrappedServer.getPath(), sourceDownsample, tileX, tileY, tileW, tileH
         )
 
-        // Read the tile from the original server (all channels, full bit depth)
         BufferedImage tile = wrappedServer.readRegion(request)
         if (tile == null) return null
 
-        // Build a mask for this tile in tile-pixel coordinates
-        // The ROI shape is in full-res coords; transform into tile space
+        int w = tile.getWidth()
+        int h = tile.getHeight()
+        int nBands = tile.getRaster().getNumBands()
+
+        // Transform ROI shape into this tile's pixel coordinate space
         def at = new AffineTransform()
-        at.scale(1.0 / ds, 1.0 / ds)
+        at.scale(1.0 / sourceDownsample, 1.0 / sourceDownsample)
         at.translate(-tileX, -tileY)
         def scaledShape = at.createTransformedShape(roiShapeFullRes)
 
-        int w = tile.getWidth()
-        int h = tile.getHeight()
+        def tileBounds = new Rectangle(0, 0, w, h)
 
+        // ── Fast path 1: entire tile is inside the ROI ──────────────────────
+        // contains(Rectangle) checks all four corners + boundary — if the
+        // scaled ROI shape fully contains the tile bounding box, no pixel
+        // outside the ROI exists in this tile, so return immediately.
+        if (scaledShape.contains(tileBounds)) {
+            return tile
+        }
+
+        def tileRaster = tile.getRaster()
+
+        // ── Fast path 2: entire tile is outside the ROI ─────────────────────
+        // intersects() returns false when the shape and rectangle are fully
+        // disjoint. Zero every band in one setSamples call per band and return.
+        if (!scaledShape.intersects(tileBounds)) {
+            int[] zeros = new int[w * h]
+            for (int b = 0; b < nBands; b++) {
+                tileRaster.setSamples(0, 0, w, h, b, zeros)
+            }
+            return tile
+        }
+
+        // ── Boundary tile: render mask and zero outside runs ─────────────────
+        // Only tiles that straddle the ROI edge reach this point.
         def maskImg = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_BINARY)
         def g2      = maskImg.createGraphics()
         g2.setColor(Color.WHITE)
@@ -148,19 +176,27 @@ class RoiMaskedServer extends AbstractTileableImageServer {
         g2.fill(scaledShape)
         g2.dispose()
 
-        // Zero out pixels outside the mask.
-        // Works on the WritableRaster directly — preserves all channels & bit depth.
-        def tileRaster = tile.getRaster()
         def maskRaster = maskImg.getRaster()
-        int nBands     = tileRaster.getNumBands()
-        def maskPixel  = new int[1]
-        def zeroPixel  = new int[nBands]   // all zeros = background
+
+        // Row-wise run-length zeroing — batches contiguous outside-ROI runs
+        // into a single setSamples() call per band, avoiding per-pixel overhead.
+        int[] maskRow = new int[w]
+        int[] zeroRow = new int[w]   // always zero; reused across rows
 
         for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                maskRaster.getPixel(x, y, maskPixel)
-                if (maskPixel[0] == 0) {
-                    tileRaster.setPixel(x, y, zeroPixel)
+            maskRaster.getSamples(0, y, w, 1, 0, maskRow)
+            int x = 0
+            while (x < w) {
+                // Skip pixels inside the ROI (mask == 1)
+                while (x < w && maskRow[x] != 0) x++
+                int runStart = x
+                // Accumulate pixels outside the ROI (mask == 0)
+                while (x < w && maskRow[x] == 0) x++
+                int runLen = x - runStart
+                if (runLen > 0) {
+                    for (int b = 0; b < nBands; b++) {
+                        tileRaster.setSamples(runStart, y, runLen, 1, b, zeroRow)
+                    }
                 }
             }
         }
@@ -227,7 +263,6 @@ annotationsToExport.each { annotation ->
         print "  Exporting: ${fileName}"
         print "    Bounds: x=${roi.getBoundsX()}, y=${roi.getBoundsY()}, w=${roi.getBoundsWidth()}, h=${roi.getBoundsHeight()}"
 
-        // Wrap original server with the masking layer
         def maskedServer = new RoiMaskedServer(server, roi, downsample)
 
         def series = new OMEPyramidWriter.Builder(maskedServer)
@@ -240,7 +275,6 @@ annotationsToExport.each { annotation ->
             series = series.downsamples(1.0, 4.0, 16.0)
 
         series.build().writeSeries(outputFilePath)
-
         maskedServer.close()
 
         print "    Saved: ${outputFilePath}"
