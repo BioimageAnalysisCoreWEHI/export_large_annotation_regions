@@ -41,7 +41,9 @@ def targetAnnotationNames = targetAnnotationNamesRaw?.trim()
 double downsample    = parseDouble('DOWNSAMPLE', 1.0)
 def outputSubDir     = env.getOrDefault('OUTPUT_SUBDIR', 'ExportedAnnotations')
 int  tileSize        = parseInt('TILE_SIZE', 512)
-int  nThreads        = parseInt('NTHREADS', 48)
+int  nThreadsRequested = parseInt('NTHREADS', 8)
+int  availableCores    = Runtime.getRuntime().availableProcessors()
+int  nThreads          = Math.max(1, Math.min(nThreadsRequested, availableCores))
 boolean bigTiff      = parseBoolean('BIG_TIFF', true)
 boolean buildPyramid = parseBoolean('BUILD_PYRAMID', true)
 
@@ -74,7 +76,7 @@ mkdirs(outputPath)
 print "Output directory: ${outputPath}"
 print "Annotation filter: ${targetAnnotationNames ? targetAnnotationNames : '[ALL]'}"
 print "Channels: ${server.nChannels()} | Bit depth: ${server.getPixelType()} | Downsample: ${downsample}"
-print "Tile size: ${tileSize} | Threads: ${nThreads} | Pyramid: ${buildPyramid}"
+print "Tile size: ${tileSize} | Threads: ${nThreads} (requested ${nThreadsRequested}, available ${availableCores}) | Pyramid: ${buildPyramid}"
 
 // ============================================================
 // MASKED SERVER CLASS

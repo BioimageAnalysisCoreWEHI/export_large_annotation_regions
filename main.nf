@@ -8,7 +8,7 @@ params.downsample = 1.0
 params.compression_type = "LZW"
 params.output_subdir = "ExportedAnnotations"
 params.tile_size = 512
-params.n_threads = 48
+params.n_threads = 8
 params.big_tiff = true
 params.build_pyramid = true
 params.outdir = "results"
@@ -106,7 +106,7 @@ workflow {
     def compressionTypeParam = params.get('compression_type', 'LZW').toString()
     def outputSubdirParam = params.get('output_subdir', 'ExportedAnnotations').toString()
     def tileSizeParam = params.get('tile_size', 512) as int
-    def nThreadsParam = params.get('n_threads', 48) as int
+    def nThreadsParam = params.get('n_threads', 8) as int
     def bigTiffParam = params.get('big_tiff', true) as boolean
     def buildPyramidParam = params.get('build_pyramid', true) as boolean
 
