@@ -16,7 +16,7 @@ params.publish_dir_mode = "copy"
 params.validate_params = true
 
 process EXPORT_LARGE_ANNOTATION_REGIONS {
-    tag project_path.tokenize('/').last()
+  tag "${project_path}"
     label 'process_heavy'
 
     publishDir "${params.outdir}", mode: params.publish_dir_mode
