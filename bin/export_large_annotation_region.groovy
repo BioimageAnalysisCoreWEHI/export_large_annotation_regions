@@ -103,6 +103,17 @@ print "Annotation filter: ${targetAnnotationNames ? targetAnnotationNames : '[AL
 print "Channels: ${server.nChannels()} | Bit depth: ${server.getPixelType()} | Downsample: ${downsample}"
 print "Tile size: ${tileSize} | Threads: ${nThreads} (requested ${nThreadsRequested}, available ${availableCores}) | Pyramid: ${buildPyramid}"
 
+print "[DEBUG] Requested annotation names (${targetAnnotationNames.size()}):"
+targetAnnotationNames.eachWithIndex { n, i ->
+    print "[DEBUG]   target[${i}] = '${n}'"
+}
+
+print "[DEBUG] Matched annotations (${annotationsToExport.size()}):"
+annotationsToExport.eachWithIndex { a, i ->
+    def r = a.getROI()
+    print "[DEBUG]   match[${i}] name='${a.getName()}' class='${a.getPathClass()}' hash=${System.identityHashCode(a)} roiHash=${System.identityHashCode(r)} bounds=(x=${r.getBoundsX()}, y=${r.getBoundsY()}, w=${r.getBoundsWidth()}, h=${r.getBoundsHeight()})"
+}
+
 // ============================================================
 // MASKED SERVER CLASS
 // ============================================================
@@ -114,6 +125,7 @@ class RoiMaskedServer extends AbstractTileableImageServer {
     private final int   cropX, cropY
     private final double baseDownsample
     private final ImageServerMetadata metadata
+    private final String serverId
 
     RoiMaskedServer(wrappedServer, roi, double downsample) {
         super()
@@ -126,6 +138,13 @@ class RoiMaskedServer extends AbstractTileableImageServer {
         this.cropY  = (int) roi.getBoundsY()
         int cropW   = (int) Math.ceil(roi.getBoundsWidth()  / downsample)
         int cropH   = (int) Math.ceil(roi.getBoundsHeight() / downsample)
+
+        this.serverId = "RoiMaskedServer(" + wrappedServer.getPath() +
+            "|x=" + this.cropX +
+            "|y=" + this.cropY +
+            "|w=" + cropW +
+            "|h=" + cropH +
+            "|ds=" + this.baseDownsample + ")"
 
         this.metadata = new ImageServerMetadata.Builder(wrappedServer.getMetadata())
             .width(cropW)
@@ -236,7 +255,7 @@ class RoiMaskedServer extends AbstractTileableImageServer {
 
     @Override
     protected String createID() {
-        return "RoiMaskedServer(" + wrappedServer.getPath() + ")"
+        return serverId
     }
 
     @Override
@@ -268,6 +287,7 @@ annotationsToExport.each { annotation ->
 
         print "  Exporting: ${fileName}"
         print "    Bounds: x=${roi.getBoundsX()}, y=${roi.getBoundsY()}, w=${roi.getBoundsWidth()}, h=${roi.getBoundsHeight()}"
+        print "    [DEBUG] Annotation='${rawName}' class='${pathClass}' annHash=${System.identityHashCode(annotation)} roiHash=${System.identityHashCode(roi)}"
 
         def maskedServer = new RoiMaskedServer(server, roi, downsample)
 
