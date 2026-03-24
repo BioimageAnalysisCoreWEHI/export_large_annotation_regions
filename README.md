@@ -11,7 +11,7 @@ Nextflow pipeline for exporting large annotation regions from a QuPath project u
 ## Required parameters
 
 - `--project` Path to QuPath project (`.qpproj`).
-- `--qupath_bin` Path to QuPath executable (for example `/vast/projects/project_name/QuPath/bin/QuPath`).
+- `--qupath_bin` Path to QuPath executable (default: `/stornext/System/data/software/rhel/9/base/tools/QuPath/0.6.0/bin/QuPath`).
 
 Optional:
 
@@ -37,7 +37,7 @@ Run on HPC with Slurm resources matching your current script (32+ CPUs, 256 GB R
 nextflow run main.nf \
 	-profile large \
 	--project /vast/projects/project_name/Qupath_project/project.qpproj \
-	--qupath_bin /vast/projects/project_name/QuPath/bin/QuPath \
+	--qupath_bin /stornext/System/data/software/rhel/9/base/tools/QuPath/0.6.0/bin/QuPath \
 	--script bin/export_large_annotation_region.groovy \
 	--target_annotation_names annotation_1,annotation_2 \
 	--downsample 1.0 \

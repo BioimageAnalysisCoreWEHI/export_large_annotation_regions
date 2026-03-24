@@ -8,7 +8,7 @@
     "input_output_options": {
       "title": "Input/output options",
       "type": "object",
-      "required": ["project", "qupath_bin", "outdir"],
+      "required": ["project", "outdir"],
       "properties": {
         "project": {
           "type": "string",
@@ -20,7 +20,8 @@
           "type": "string",
           "format": "file-path",
           "exists": true,
-          "description": "Path to QuPath executable, e.g. /vast/projects/project_name/QuPath/bin/QuPath"
+          "default": "/stornext/System/data/software/rhel/9/base/tools/QuPath/0.6.0/bin/QuPath",
+          "description": "Path to QuPath executable, e.g. /stornext/System/data/software/rhel/9/base/tools/QuPath/0.6.0/bin/QuPath"
         },
         "script": {
           "type": "string",

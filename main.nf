@@ -1,7 +1,7 @@
 nextflow.enable.dsl = 2
 
 params.project = null
-params.qupath_bin = null
+params.qupath_bin = "/stornext/System/data/software/rhel/9/base/tools/QuPath/0.6.0/bin/QuPath"
 params.script = "${projectDir}/bin/export_large_annotation_region.groovy"
 params.target_annotation_names = "annotation_1"
 params.downsample = 1.0
