@@ -8,7 +8,7 @@ params.downsample = 1.0
 params.compression_type = "LZW"
 params.output_subdir = "ExportedAnnotations"
 params.tile_size = 512
-params.n_threads = 32
+params.num_cpus = 48
 params.big_tiff = true
 params.build_pyramid = true
 params.outdir = "results"
@@ -22,7 +22,7 @@ process EXPORT_LARGE_ANNOTATION_REGIONS {
     publishDir "${params.outdir}", mode: params.publish_dir_mode
 
     input:
-    tuple val(project_path), val(qupath_bin), val(script_path), val(target_annotation_names), val(downsample), val(compression_type), val(output_subdir), val(tile_size), val(n_threads), val(big_tiff), val(build_pyramid)
+    tuple val(project_path), val(qupath_bin), val(script_path), val(target_annotation_names), val(downsample), val(compression_type), val(output_subdir), val(tile_size), val(num_cpus), val(big_tiff), val(build_pyramid)
 
     output:
     path "ExportedAnnotations"
@@ -55,7 +55,7 @@ process EXPORT_LARGE_ANNOTATION_REGIONS {
     export COMPRESSION_TYPE="${compression_type}"
     export OUTPUT_SUBDIR="${output_subdir}"
     export TILE_SIZE="${tile_size}"
-    export NTHREADS="${n_threads}"
+    export NTHREADS="${num_cpus}"
     export BIG_TIFF="${big_tiff}"
     export BUILD_PYRAMID="${build_pyramid}"
 
@@ -106,7 +106,7 @@ workflow {
     def compressionTypeParam = params.get('compression_type', 'LZW').toString()
     def outputSubdirParam = params.get('output_subdir', 'ExportedAnnotations').toString()
     def tileSizeParam = params.get('tile_size', 512) as int
-    def nThreadsParam = params.get('n_threads', 8) as int
+    def numCpusParam = params.get('num_cpus', 48) as int
     def bigTiffParam = params.get('big_tiff', true) as boolean
     def buildPyramidParam = params.get('build_pyramid', true) as boolean
 
@@ -116,8 +116,8 @@ workflow {
     if (tileSizeParam <= 0) {
       error "tile_size must be > 0"
     }
-    if (nThreadsParam <= 0) {
-      error "n_threads must be > 0"
+    if (numCpusParam <= 0) {
+      error "num_cpus must be > 0"
     }
     if (!outputSubdirParam?.trim()) {
       error "output_subdir cannot be empty"
@@ -133,7 +133,7 @@ workflow {
             compressionTypeParam,
             outputSubdirParam,
             tileSizeParam,
-            nThreadsParam,
+            numCpusParam,
             bigTiffParam,
             buildPyramidParam
         ))

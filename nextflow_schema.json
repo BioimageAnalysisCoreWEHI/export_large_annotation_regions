@@ -57,11 +57,11 @@
           "default": 512,
           "description": "Tile width/height in pixels used by OMEPyramidWriter"
         },
-        "n_threads": {
+        "num_cpus": {
           "type": "integer",
           "minimum": 1,
-          "default": 32,
-          "description": "Number of threads used internally by QuPath export"
+          "default": 48,
+          "description": "Number of CPUs/threads used internally by QuPath export"
         },
         "big_tiff": {
           "type": "boolean",

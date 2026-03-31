@@ -23,7 +23,7 @@ Optional:
 - `--compression_type` OME-TIFF compression type for QuPath writer (default: `LZW`).
 - `--output_subdir` QuPath project-side output subdirectory name (default: `ExportedAnnotations`).
 - `--tile_size` OME writer tile width/height in pixels (default: `512`).
-- `--n_threads` Threads used by QuPath writer parallelization (default: `32`).
+- `--num_cpus` Threads used by QuPath writer parallelization (default: `48`).
 - `--big_tiff` Enable BigTIFF output for large files (default: `true`).
 - `--build_pyramid` Enable pyramidal OME-TIFF output (default: `true`).
 - `--outdir` Output directory for published results (default: `results`).
@@ -43,7 +43,7 @@ nextflow run main.nf \
 	--compression_type LZW \
 	--output_subdir ExportedAnnotations \
 	--tile_size 512 \
-	--n_threads 32 \
+	--num_cpus 48 \
 	--big_tiff true \
 	--build_pyramid true \
 	--outdir /path/to/output
