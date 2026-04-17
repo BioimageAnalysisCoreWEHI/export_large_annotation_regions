@@ -3,6 +3,7 @@ nextflow.enable.dsl = 2
 params.project = null
 params.qupath_bin = "/stornext/System/data/software/rhel/9/base/tools/QuPath/0.6.0/bin/QuPath"
 params.script = "${projectDir}/bin/export_large_annotation_region.groovy"
+params.list_images_script = "${projectDir}/bin/list_project_images.groovy"
 params.target_annotation_names = "annotation_1"
 params.downsample = 1.0
 params.compression_type = "LZW"
@@ -15,18 +16,43 @@ params.outdir = "results"
 params.publish_dir_mode = "copy"
 params.validate_params = true
 
+/*
+ * List all image names in a QuPath project.
+ * Stdout is one image name per line, consumed by splitText downstream.
+ */
+process LIST_IMAGES {
+    tag "${project_path}"
+    label 'process_light'
+
+    input:
+    tuple val(project_path), val(qupath_bin), val(list_script)
+
+    output:
+    stdout
+
+    script:
+    """
+    set -euo pipefail
+    "${qupath_bin}" script "${list_script}" --project "${project_path}" 2>/dev/null
+    """
+}
+
+/*
+ * Export annotations for a single image.
+ * Each image is processed as a separate Nextflow task, enabling parallelism.
+ */
 process EXPORT_LARGE_ANNOTATION_REGIONS {
-  tag "${project_path}"
+    tag "${image_name}"
     label 'process_heavy'
 
     publishDir "${params.outdir}", mode: params.publish_dir_mode
 
     input:
-    tuple val(project_path), val(qupath_bin), val(script_path), val(target_annotation_names), val(downsample), val(compression_type), val(output_subdir), val(tile_size), val(num_cpus), val(big_tiff), val(build_pyramid)
+    tuple val(project_path), val(qupath_bin), val(script_path), val(image_name), val(target_annotation_names), val(downsample), val(compression_type), val(output_subdir), val(tile_size), val(num_cpus), val(big_tiff), val(build_pyramid)
 
     output:
-    path "ExportedAnnotations"
-    path "qupath_large_annotation_export.log"
+    path "ExportedAnnotations_${task.index}"
+    path "qupath_large_annotation_export_${image_name}.log"
 
     script:
     """
@@ -59,16 +85,18 @@ process EXPORT_LARGE_ANNOTATION_REGIONS {
     export BIG_TIFF="${big_tiff}"
     export BUILD_PYRAMID="${build_pyramid}"
 
-    "${qupath_bin}" script "${script_path}" --project "${project_path}" \
-      2>&1 | tee qupath_large_annotation_export.log
+    "${qupath_bin}" script "${script_path}" \
+      --project "${project_path}" \
+      --image "${image_name}" \
+      2>&1 | tee "qupath_large_annotation_export_${image_name}.log"
 
-    mkdir -p ExportedAnnotations
+    mkdir -p "ExportedAnnotations_${task.index}"
 
     if [[ -d "\${project_export_dir}" ]]; then
-      cp -r "\${project_export_dir}/." ExportedAnnotations/
+      cp -r "\${project_export_dir}/." "ExportedAnnotations_${task.index}/"
     else
-      echo "ERROR: Expected output directory not found: \${project_export_dir}" >&2
-      exit 1
+      echo "WARNING: No output directory found for image ${image_name}: \${project_export_dir}" >&2
+      echo "This image may have had no matching annotations." >&2
     fi
     """
 }
@@ -101,6 +129,16 @@ workflow {
         error "Groovy script does not exist: ${params.script} (tried: ${scriptCandidates*.toString().join(', ')})"
     }
 
+    def listScriptParam = params.list_images_script.toString()
+    def listScriptCandidates = [
+        file(listScriptParam),
+        file("${projectDir}/${listScriptParam}")
+    ]
+    def listScriptFile = listScriptCandidates.find { candidate -> candidate.exists() }
+    if (!listScriptFile) {
+        error "List-images script does not exist: ${params.list_images_script} (tried: ${listScriptCandidates*.toString().join(', ')})"
+    }
+
     def targetAnnotationNamesParam = params.get('target_annotation_names', 'annotation_1').toString()
     def downsampleParam = params.get('downsample', 1.0) as double
     def compressionTypeParam = params.get('compression_type', 'LZW').toString()
@@ -123,11 +161,27 @@ workflow {
       error "output_subdir cannot be empty"
     }
 
-    channel
-        .of(tuple(
+    // Step 1 — discover images in the project
+    def list_input = channel.of(
+        tuple(
+            projectFile.toString(),
+            qupathExe.toString(),
+            listScriptFile.toString()
+        )
+    )
+
+    image_names = LIST_IMAGES(list_input)
+        .splitText()
+        .map { it.trim() }
+        .filter { it }
+
+    // Step 2 — fan out: one EXPORT task per image
+    export_input = image_names.map { img_name ->
+        tuple(
             projectFile.toString(),
             qupathExe.toString(),
             scriptFile.toString(),
+            img_name,
             targetAnnotationNamesParam,
             downsampleParam,
             compressionTypeParam,
@@ -136,6 +190,8 @@ workflow {
             numCpusParam,
             bigTiffParam,
             buildPyramidParam
-        ))
-        | EXPORT_LARGE_ANNOTATION_REGIONS
+        )
+    }
+
+    EXPORT_LARGE_ANNOTATION_REGIONS(export_input)
 }
