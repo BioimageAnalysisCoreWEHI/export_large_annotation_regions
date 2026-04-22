@@ -60,6 +60,10 @@ try {
 // ============================================================
 
 def imageName = getProjectEntry()?.getImageName() ?: '(unknown image)'
+def imageStem = imageName
+    .replaceAll(/(?i)\.ome\.tiff?$/, '')
+    .replaceAll(/(?i)\.tiff?$/, '')
+def safeImageStem = imageStem.replaceAll(/[\\/:*?"<>|\s]+/, '_')
 
 // ============================================================
 // COLLECT & FILTER ANNOTATIONS (BEFORE OPENING SERVER)
@@ -280,7 +284,7 @@ annotationsToExport.each { annotation ->
 
         nameCount[safeName] = (nameCount[safeName] ?: 0) + 1
         def suffix       = nameCount[safeName] > 1 ? "_${nameCount[safeName]}" : ''
-        def fileName     = "${safeName}${suffix}.ome.tif"
+        def fileName     = "${safeImageStem}__${safeName}${suffix}.ome.tif"
         def outputFilePath = buildFilePath(outputPath, fileName)
 
         print "  Exporting: ${fileName}"
