@@ -159,7 +159,7 @@ workflow {
     image_names = LIST_IMAGES(list_input)
         .splitText()
         .map { it.trim() }
-        .filter { it && it =~ /\.(tiff?|svs|ndpi|qptiff|czi|lif|vsi|scn|btf)$/i }
+        .filter { it }
         .distinct()  // guard against duplicate names if QuPath emits multiple lines per image
 
     // Step 2 — fan out: one EXPORT task per image
