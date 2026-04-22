@@ -32,7 +32,8 @@ process LIST_IMAGES {
     script:
     """
     set -euo pipefail
-    "${qupath_bin}" script "${list_script}" --project "${project_path}" 2>/dev/null
+    "${qupath_bin}" script "${list_script}" --project "${project_path}" 2>/dev/null \
+      | grep -iE '\.(tiff?|ome\.tif|svs|ndpi|qptiff|czi|lif|vsi|scn|btf)$'
     """
 }
 
@@ -158,7 +159,7 @@ workflow {
     image_names = LIST_IMAGES(list_input)
         .splitText()
         .map { it.trim() }
-        .filter { it }
+        .filter { it && it =~ /\.(tiff?|svs|ndpi|qptiff|czi|lif|vsi|scn|btf)$/i }
         .distinct()  // guard against duplicate names if QuPath emits multiple lines per image
 
     // Step 2 — fan out: one EXPORT task per image
