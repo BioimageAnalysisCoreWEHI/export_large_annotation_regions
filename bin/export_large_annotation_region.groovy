@@ -278,10 +278,6 @@ annotationsToExport.each { annotation ->
         def rawName  = annotation.getName()?.trim() ?: 'Unnamed'
         def safeName = rawName.replaceAll(/[\\/:*?"<>|]/, '_')
 
-        def pathClass = annotation.getPathClass()
-        if (pathClass != null && pathClass.toString() != rawName)
-            safeName += "_${pathClass.toString().replaceAll(/[\\/:*?"<>|]/, '_')}"
-
         nameCount[safeName] = (nameCount[safeName] ?: 0) + 1
         def suffix       = nameCount[safeName] > 1 ? "_${nameCount[safeName]}" : ''
         def fileName     = "${safeImageStem}__${safeName}${suffix}.ome.tif"
@@ -289,7 +285,7 @@ annotationsToExport.each { annotation ->
 
         print "  Exporting: ${fileName}"
         print "    Bounds: x=${roi.getBoundsX()}, y=${roi.getBoundsY()}, w=${roi.getBoundsWidth()}, h=${roi.getBoundsHeight()}"
-        print "    [DEBUG] Annotation='${rawName}' class='${pathClass}' annHash=${System.identityHashCode(annotation)} roiHash=${System.identityHashCode(roi)}"
+        print "    [DEBUG] Annotation='${rawName}' class='${annotation.getPathClass()}' annHash=${System.identityHashCode(annotation)} roiHash=${System.identityHashCode(roi)}"
 
         def maskedServer = new RoiMaskedServer(server, roi, downsample)
 
