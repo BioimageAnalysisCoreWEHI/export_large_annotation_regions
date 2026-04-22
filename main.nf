@@ -45,13 +45,14 @@ process EXPORT_LARGE_ANNOTATION_REGIONS {
     tag "${image_name}"
     label 'process_heavy'
 
-    publishDir "${params.outdir}", mode: params.publish_dir_mode
+  publishDir "${params.outdir}/ExportedAnnotations", mode: params.publish_dir_mode, pattern: "*.ome.tif"
+  publishDir "${params.outdir}", mode: params.publish_dir_mode, pattern: "qupath_large_annotation_export_*.log"
 
     input:
     tuple val(project_path), val(qupath_bin), val(script_path), val(image_name), val(target_annotation_names), val(downsample), val(compression_type), val(tile_size), val(num_cpus), val(big_tiff), val(build_pyramid)
 
     output:
-    path "ExportedAnnotations"
+    path "*.ome.tif", optional: true
     path "qupath_large_annotation_export_${image_name}.log"
 
     script:
@@ -73,12 +74,10 @@ process EXPORT_LARGE_ANNOTATION_REGIONS {
       exit 1
     fi
 
-    mkdir -p "ExportedAnnotations"
-
     export TARGET_ANNOTATION_NAMES="${target_annotation_names}"
     export DOWNSAMPLE="${downsample}"
     export COMPRESSION_TYPE="${compression_type}"
-    export OUTPUT_DIR="\${PWD}/ExportedAnnotations"
+    export OUTPUT_DIR="\${PWD}"
     export TILE_SIZE="${tile_size}"
     export NTHREADS="${num_cpus}"
     export BIG_TIFF="${big_tiff}"
