@@ -33,7 +33,7 @@ process LIST_IMAGES {
     """
     set -euo pipefail
     "${qupath_bin}" script "${list_script}" --project "${project_path}" 2>/dev/null \
-      | grep -iE '\.(tiff?|ome\.tif|svs|ndpi|qptiff|czi|lif|vsi|scn|btf)$'
+      | grep -iE '\\.(tiff?|ome\\.tif|svs|ndpi|qptiff|czi|lif|vsi|scn|btf)$'
     """
 }
 
