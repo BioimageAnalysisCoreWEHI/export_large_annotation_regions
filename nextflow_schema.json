@@ -46,11 +46,6 @@
           "default": "LZW",
           "description": "OME-TIFF compression type passed to QuPath, for example LZW"
         },
-        "output_subdir": {
-          "type": "string",
-          "default": "ExportedAnnotations",
-          "description": "Subdirectory created beside the QuPath project to store exported regions"
-        },
         "tile_size": {
           "type": "integer",
           "minimum": 1,

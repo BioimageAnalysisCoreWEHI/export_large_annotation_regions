@@ -7,7 +7,6 @@ params.list_images_script = "${projectDir}/bin/list_project_images.groovy"
 params.target_annotation_names = "annotation_1"
 params.downsample = 1.0
 params.compression_type = "LZW"
-params.output_subdir = "ExportedAnnotations"
 params.tile_size = 512
 params.num_cpus = 48
 params.big_tiff = true
@@ -48,10 +47,10 @@ process EXPORT_LARGE_ANNOTATION_REGIONS {
     publishDir "${params.outdir}", mode: params.publish_dir_mode
 
     input:
-    tuple val(project_path), val(qupath_bin), val(script_path), val(image_name), val(target_annotation_names), val(downsample), val(compression_type), val(output_subdir), val(tile_size), val(num_cpus), val(big_tiff), val(build_pyramid)
+    tuple val(project_path), val(qupath_bin), val(script_path), val(image_name), val(target_annotation_names), val(downsample), val(compression_type), val(tile_size), val(num_cpus), val(big_tiff), val(build_pyramid)
 
     output:
-    path "ExportedAnnotations_${task.index}"
+    path "ExportedAnnotations"
     path "qupath_large_annotation_export_${image_name}.log"
 
     script:
@@ -73,13 +72,12 @@ process EXPORT_LARGE_ANNOTATION_REGIONS {
       exit 1
     fi
 
-    project_dir="\$(dirname "${project_path}")"
-    project_export_dir="\${project_dir}/${output_subdir}"
+    mkdir -p "ExportedAnnotations"
 
     export TARGET_ANNOTATION_NAMES="${target_annotation_names}"
     export DOWNSAMPLE="${downsample}"
     export COMPRESSION_TYPE="${compression_type}"
-    export OUTPUT_SUBDIR="${output_subdir}"
+    export OUTPUT_DIR="\${PWD}/ExportedAnnotations"
     export TILE_SIZE="${tile_size}"
     export NTHREADS="${num_cpus}"
     export BIG_TIFF="${big_tiff}"
@@ -89,15 +87,6 @@ process EXPORT_LARGE_ANNOTATION_REGIONS {
       --project "${project_path}" \
       --image "${image_name}" \
       2>&1 | tee "qupath_large_annotation_export_${image_name}.log"
-
-    mkdir -p "ExportedAnnotations_${task.index}"
-
-    if [[ -d "\${project_export_dir}" ]]; then
-      cp -r "\${project_export_dir}/." "ExportedAnnotations_${task.index}/"
-    else
-      echo "WARNING: No output directory found for image ${image_name}: \${project_export_dir}" >&2
-      echo "This image may have had no matching annotations." >&2
-    fi
     """
 }
 
@@ -142,7 +131,6 @@ workflow {
     def targetAnnotationNamesParam = params.get('target_annotation_names', 'annotation_1').toString()
     def downsampleParam = params.get('downsample', 1.0) as double
     def compressionTypeParam = params.get('compression_type', 'LZW').toString()
-    def outputSubdirParam = params.get('output_subdir', 'ExportedAnnotations').toString()
     def tileSizeParam = params.get('tile_size', 512) as int
     def numCpusParam = params.get('num_cpus', 48) as int
     def bigTiffParam = params.get('big_tiff', true) as boolean
@@ -156,9 +144,6 @@ workflow {
     }
     if (numCpusParam <= 0) {
       error "num_cpus must be > 0"
-    }
-    if (!outputSubdirParam?.trim()) {
-      error "output_subdir cannot be empty"
     }
 
     // Step 1 — discover images in the project
@@ -174,6 +159,7 @@ workflow {
         .splitText()
         .map { it.trim() }
         .filter { it }
+        .distinct()  // guard against duplicate names if QuPath emits multiple lines per image
 
     // Step 2 — fan out: one EXPORT task per image
     export_input = image_names.map { img_name ->
@@ -185,7 +171,6 @@ workflow {
             targetAnnotationNamesParam,
             downsampleParam,
             compressionTypeParam,
-            outputSubdirParam,
             tileSizeParam,
             numCpusParam,
             bigTiffParam,

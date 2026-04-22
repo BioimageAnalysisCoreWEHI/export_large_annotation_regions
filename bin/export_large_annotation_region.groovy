@@ -39,7 +39,7 @@ def targetAnnotationNames = targetAnnotationNamesRaw?.trim()
     : []
 
 double downsample    = parseDouble('DOWNSAMPLE', 1.0)
-def outputSubDir     = env.getOrDefault('OUTPUT_SUBDIR', 'ExportedAnnotations')
+def outputDir        = env.getOrDefault('OUTPUT_DIR', 'ExportedAnnotations')
 int  tileSize        = parseInt('TILE_SIZE', 512)
 int  nThreadsRequested = parseInt('NTHREADS', 32)
 int  availableCores    = Runtime.getRuntime().availableProcessors()
@@ -93,9 +93,7 @@ try {
     return
 }
 
-def outputPath = new File(outputSubDir).isAbsolute()
-    ? outputSubDir
-    : buildFilePath(PROJECT_BASE_DIR, outputSubDir)
+def outputPath = outputDir
 mkdirs(outputPath)
 
 print "Output directory: ${outputPath}"
