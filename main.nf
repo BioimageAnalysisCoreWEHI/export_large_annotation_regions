@@ -83,10 +83,24 @@ process EXPORT_LARGE_ANNOTATION_REGIONS {
     export BIG_TIFF="${big_tiff}"
     export BUILD_PYRAMID="${build_pyramid}"
 
+    # Disable exit-on-error around the QuPath call so we can inspect the log
+    # before deciding whether a non-zero exit is a real failure or a broken URI.
+    set +e
     "${qupath_bin}" script "${script_path}" \
       --project "${project_path}" \
       --image "${image_name}" \
       2>&1 | tee "qupath_large_annotation_export_${image_name}.log"
+    QUPATH_EXIT=\${PIPESTATUS[0]}
+    set -e
+
+    if [[ \$QUPATH_EXIT -ne 0 ]]; then
+      if grep -q "Failed to load ImageServer" "qupath_large_annotation_export_${image_name}.log"; then
+        echo "[WARN] Skipping ${image_name}: broken image URI in QuPath project (ImageServer could not be opened)" >&2
+        exit 0
+      fi
+      echo "[ERROR] QuPath failed for ${image_name} (exit \${QUPATH_EXIT})" >&2
+      exit \$QUPATH_EXIT
+    fi
     """
 }
 
