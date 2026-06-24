@@ -23,7 +23,7 @@ Optional:
 - `--compression_type` OME-TIFF compression type for QuPath writer (default: `LZW`).
 - `--output_subdir` QuPath project-side output subdirectory name (default: `ExportedAnnotations`).
 - `--tile_size` OME writer tile width/height in pixels (default: `512`).
-- `--num_cpus` Threads used by QuPath writer parallelization (default: `48`).
+- `--num_cpus` Threads used by QuPath writer parallelization (default: `36`).
 - `--big_tiff` Enable BigTIFF output for large files (default: `true`).
 - `--build_pyramid` Enable pyramidal OME-TIFF output (default: `true`).
 - `--outdir` Output directory for published results (default: `results`).
@@ -31,7 +31,7 @@ Optional:
 
 ## Usage
 
-Run on HPC with Slurm resources matching the default medium profile (48 CPUs, 450 GB RAM):
+Run on HPC with Slurm resources matching the default medium profile (36 CPUs, 450 GB RAM):
 
 ```bash
 nextflow run main.nf \
@@ -43,7 +43,7 @@ nextflow run main.nf \
 	--compression_type LZW \
 	--output_subdir ExportedAnnotations \
 	--tile_size 512 \
-	--num_cpus 48 \
+	--num_cpus 36 \
 	--big_tiff true \
 	--build_pyramid true \
 	--outdir /path/to/output
@@ -55,9 +55,9 @@ The pipeline defaults to the `standard` profile, configured with medium resource
 
 | Profile | Executor | Queue | CPUs (`process_heavy`) | Memory (`process_heavy`) | Time (`process_heavy`) |
 |---|---|---|---:|---:|---:|
-| `standard` (default) | slurm | regular | 48 | 450 GB | 24h |
+| `standard` (default) | slurm | regular | 36 | 450 GB | 24h |
 | `small` | slurm | regular | 16 | 128 GB | 24h |
-| `medium` | slurm | regular | 48 | 450 GB | 24h |
+| `medium` | slurm | regular | 36 | 450 GB | 24h |
 | `large` | slurm | regular | 64 | 1200 GB | 24h |
 
 Use `-profile small`, `-profile medium`, or `-profile large` to override the default resource profile.
