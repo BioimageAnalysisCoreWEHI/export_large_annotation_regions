@@ -8,7 +8,7 @@ params.target_annotation_names = "annotation_1"
 params.downsample = 1.0
 params.compression_type = "LZW"
 params.tile_size = 512
-params.num_cpus = 48
+params.num_cpus = 36
 params.big_tiff = true
 params.build_pyramid = true
 params.outdir = "results"
@@ -146,7 +146,7 @@ workflow {
     def downsampleParam = params.get('downsample', 1.0) as double
     def compressionTypeParam = params.get('compression_type', 'LZW').toString()
     def tileSizeParam = params.get('tile_size', 512) as int
-    def numCpusParam = params.get('num_cpus', 48) as int
+    def numCpusParam = params.get('num_cpus', 36) as int
     def bigTiffParam = params.get('big_tiff', true) as boolean
     def buildPyramidParam = params.get('build_pyramid', true) as boolean
 
