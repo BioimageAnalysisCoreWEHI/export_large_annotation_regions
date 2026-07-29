@@ -4,7 +4,12 @@ params.project = null
 params.qupath_bin = "/stornext/System/data/software/rhel/9/base/tools/QuPath/0.6.0/bin/QuPath"
 params.script = "${projectDir}/bin/export_large_annotation_region.groovy"
 params.list_images_script = "${projectDir}/bin/list_project_images.groovy"
-params.target_annotation_names = "annotation_1"
+// Empty exports every annotation, which is the only default that generalises:
+// there is no annotation name every project shares. It also has to be empty
+// rather than an example name because the launcher form omits blank fields
+// instead of sending "", so any non-empty default here silently overrides a
+// user who deliberately left the field blank.
+params.target_annotation_names = ""
 params.downsample = 1.0
 params.compression_type = "LZW"
 params.tile_size = 512
@@ -142,7 +147,7 @@ workflow {
         error "List-images script does not exist: ${params.list_images_script} (tried: ${listScriptCandidates*.toString().join(', ')})"
     }
 
-    def targetAnnotationNamesParam = params.get('target_annotation_names', 'annotation_1').toString()
+    def targetAnnotationNamesParam = params.get('target_annotation_names', '').toString()
     def downsampleParam = params.get('downsample', 1.0) as double
     def compressionTypeParam = params.get('compression_type', 'LZW').toString()
     def tileSizeParam = params.get('tile_size', 512) as int

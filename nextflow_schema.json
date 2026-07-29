@@ -32,8 +32,8 @@
         },
         "target_annotation_names": {
           "type": "string",
-          "default": "annotation_1,annotation_2",
-          "description": "Comma-separated annotation names to export (empty string exports all annotations), no spaces between names and commas, for example annotation_1,annotation_2"
+          "default": "",
+          "description": "Comma-separated annotation names to export, no spaces around the commas, for example annotation_1,annotation_2. Leave empty (the default) to export every annotation in the project."
         },
         "downsample": {
           "type": "number",

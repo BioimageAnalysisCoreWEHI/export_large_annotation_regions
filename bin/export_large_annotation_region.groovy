@@ -33,7 +33,9 @@ def parseDouble = { String key, double defaultValue ->
     catch (Exception ignored) { return defaultValue }
 }
 
-def targetAnnotationNamesRaw = env.getOrDefault('TARGET_ANNOTATION_NAMES', 'annotation_1')
+// Default empty -> export all annotations (see annotationsToExport below).
+// Defaulting to a name would make an unset variable silently export nothing.
+def targetAnnotationNamesRaw = env.getOrDefault('TARGET_ANNOTATION_NAMES', '')
 def targetAnnotationNames = targetAnnotationNamesRaw?.trim()
     ? targetAnnotationNamesRaw.split(',').collect { it.trim() }.findAll { it }
     : []
