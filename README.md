@@ -11,7 +11,8 @@ Nextflow pipeline for exporting large annotation regions from a QuPath project u
 ## Required parameters
 
 - `--project` Path to QuPath project (`.qpproj`).
-- `--qupath_bin` Path to QuPath executable (default: `/stornext/System/data/software/rhel/9/base/tools/QuPath/0.6.0/bin/QuPath`).
+- `--qupath_bin` Path to QuPath executable (default: `/stornext/System/data/software/rhel/9/base/tools/QuPath/0.7.0/bin/QuPath`).
+	Tested against QuPath 0.7.0 (Groovy 5, Java 25) and 0.6.0. To run against 0.6.0, pass `--qupath_bin /stornext/System/data/software/rhel/9/base/tools/QuPath/0.6.0/bin/QuPath`.
 
 Optional:
 
@@ -36,7 +37,7 @@ Run on HPC with Slurm resources matching the default medium profile (36 CPUs, 45
 ```bash
 nextflow run main.nf \
 	--project /vast/projects/project_name/Qupath_project/project.qpproj \
-	--qupath_bin /stornext/System/data/software/rhel/9/base/tools/QuPath/0.6.0/bin/QuPath \
+	--qupath_bin /stornext/System/data/software/rhel/9/base/tools/QuPath/0.7.0/bin/QuPath \
 	--script bin/export_large_annotation_region.groovy \
 	--target_annotation_names annotation_1,annotation_2 \
 	--downsample 1.0 \
@@ -70,5 +71,5 @@ Use `-profile small`, `-profile medium`, or `-profile large` to override the def
 ## Notes
 
 - Groovy export settings are now pipeline parameters, so you can change them via CLI without editing the script.
-- If your environment does not provide `module load java/17`, use a QuPath build that bundles Java or enable the `conda` profile in `nextflow.config`.
+- QuPath bundles its own JRE (Java 25 in 0.7.0, Java 21 in 0.6.0), so no `module load java` step is required for headless runs — the pipeline invokes the `QuPath` launcher directly.
 

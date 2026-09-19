@@ -1,7 +1,7 @@
 nextflow.enable.dsl = 2
 
 params.project = null
-params.qupath_bin = "/stornext/System/data/software/rhel/9/base/tools/QuPath/0.6.0/bin/QuPath"
+params.qupath_bin = "/stornext/System/data/software/rhel/9/base/tools/QuPath/0.7.0/bin/QuPath"
 params.script = "${projectDir}/bin/export_large_annotation_region.groovy"
 params.list_images_script = "${projectDir}/bin/list_project_images.groovy"
 // Empty exports every annotation, which is the only default that generalises:
