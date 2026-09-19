@@ -282,7 +282,7 @@ annotationsToExport.each { annotation ->
 
         nameCount[safeName] = (nameCount[safeName] ?: 0) + 1
         def suffix       = nameCount[safeName] > 1 ? "_${nameCount[safeName]}" : ''
-        def fileName     = "${safeImageStem}__${safeName}${suffix}.ome.tif"
+        def fileName     = "${safeImageStem}_${safeName}${suffix}.ome.tif"
         def outputFilePath = buildFilePath(outputPath, fileName)
 
         print "  Exporting: ${fileName}"
